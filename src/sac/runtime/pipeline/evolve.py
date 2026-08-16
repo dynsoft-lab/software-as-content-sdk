@@ -23,7 +23,7 @@ from sac.runtime.pipeline._tsx_filter import TsxChunkFilter
 from sac.runtime.pipeline.events import PipelineEmitter
 from sac.runtime.prompts.app import build_final_system_prompt
 from sac.runtime.prompts.growth import build_growth_prompt, build_growth_prompt_diff
-from sac.runtime.providers.base import LLMProvider
+from sac.runtime.providers.base import LLMProvider, reasoning_kwargs
 from sac.types import (
     App,
     ConversationSettings,
@@ -71,7 +71,11 @@ async def evolve_pipeline(
             custom_growth_rules=settings.growth_rules or None,
             content=content,
         )
-        response = await llm.complete(model, [Message(role="user", content=growth_prompt)])
+        response = await llm.complete(
+            model,
+            [Message(role="user", content=growth_prompt)],
+            **reasoning_kwargs(settings.reasoning_effort),
+        )
         decision, code = _parse_growth_response(response)
         emitter.complete("generate")
     except Exception:
@@ -125,7 +129,11 @@ async def stream_evolve_pipeline(
     full_content = ""
     tsx_filter = TsxChunkFilter()
     try:
-        async for token in llm.stream(model, [Message(role="user", content=growth_prompt)]):
+        async for token in llm.stream(
+            model,
+            [Message(role="user", content=growth_prompt)],
+            **reasoning_kwargs(settings.reasoning_effort),
+        ):
             full_content += token
             for chunk in tsx_filter.feed(token):
                 yield PipelineChunkEvent(data=chunk)
@@ -196,7 +204,11 @@ async def stream_evolve_pipeline_diff(
 
     diff_filter = DiffChunkFilter(clean_code)
     try:
-        async for token in llm.stream(model, [Message(role="user", content=growth_prompt)]):
+        async for token in llm.stream(
+            model,
+            [Message(role="user", content=growth_prompt)],
+            **reasoning_kwargs(settings.reasoning_effort),
+        ):
             for snapshot in diff_filter.feed(token):
                 yield PipelineSnapshotEvent(code=snapshot)
         for snapshot in diff_filter.finalize():

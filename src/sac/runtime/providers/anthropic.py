@@ -17,6 +17,19 @@ from sac.types import Message
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 
+# reasoning_effort → extended-thinking budget. Must stay below max_tokens
+# (16384 default); "none"/"default" omit thinking entirely.
+_THINKING_BUDGETS = {"low": 1024, "medium": 4096, "high": 8192}
+
+
+def _pop_thinking(kwargs: dict) -> dict:
+    effort = kwargs.pop("reasoning_effort", None)
+    budget = _THINKING_BUDGETS.get(effort) if isinstance(effort, str) else None
+    if budget:
+        return {"thinking": {"type": "enabled", "budget_tokens": budget}}
+    return {}
+
+
 MODEL_ALIASES = {
     "anthropic/claude-opus-4.5": "claude-opus-4-5-20250514",
     "anthropic/claude-sonnet-4.5": "claude-sonnet-4-5-20250514",
@@ -51,6 +64,7 @@ class AnthropicProvider:
             "messages": msgs,
             "max_tokens": kwargs.pop("max_tokens", 16384),
         }
+        body.update(_pop_thinking(kwargs))
         if system:
             body["system"] = system
         body.update(kwargs)
@@ -72,6 +86,7 @@ class AnthropicProvider:
             "max_tokens": kwargs.pop("max_tokens", 16384),
             "stream": True,
         }
+        body.update(_pop_thinking(kwargs))
         if system:
             body["system"] = system
         body.update(kwargs)

@@ -16,7 +16,7 @@ from typing import AsyncIterator
 from sac.runtime.pipeline.events import PipelineEmitter
 from sac.runtime.prompts.app import build_final_system_prompt, build_generation_prompt
 from sac.runtime.prompts.data import build_data_context_prompt
-from sac.runtime.providers.base import LLMProvider
+from sac.runtime.providers.base import LLMProvider, reasoning_kwargs
 from sac.types import (
     App,
     ConversationSettings,
@@ -59,7 +59,11 @@ async def generate_pipeline(
             prompt = f"{system_prompt}\n\n{data_context}\n\nUSER INTENT: {intent}"
         else:
             prompt = build_generation_prompt(intent, system_prompt)
-        response = await llm.complete(model, [Message(role="user", content=prompt)])
+        response = await llm.complete(
+            model,
+            [Message(role="user", content=prompt)],
+            **reasoning_kwargs(settings.reasoning_effort),
+        )
         emitter.complete("generate")
     except Exception:
         emitter.error("generate")
@@ -100,7 +104,11 @@ async def stream_generate_pipeline(
 
     full_content = ""
     try:
-        async for token in llm.stream(model, [Message(role="user", content=prompt)]):
+        async for token in llm.stream(
+            model,
+            [Message(role="user", content=prompt)],
+            **reasoning_kwargs(settings.reasoning_effort),
+        ):
             full_content += token
             yield PipelineChunkEvent(data=token)
     except Exception as exc:

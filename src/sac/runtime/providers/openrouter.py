@@ -19,6 +19,17 @@ from sac.types import Message
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
+def _pop_reasoning(kwargs: dict) -> dict:
+    """Translate the neutral reasoning_effort kwarg into OpenRouter's unified
+    `reasoning` field. Models without reasoning support ignore it."""
+    effort = kwargs.pop("reasoning_effort", None)
+    if effort == "none":
+        return {"reasoning": {"enabled": False}}
+    if effort in ("low", "medium", "high"):
+        return {"reasoning": {"effort": effort}}
+    return {}
+
+
 class OpenRouterProvider:
     """LLM provider for any OpenAI-compatible chat completions endpoint."""
 
@@ -38,13 +49,16 @@ class OpenRouterProvider:
 
     async def complete(self, model: str, messages: list[Message], **kwargs: object) -> str:
         """Send messages to the LLM and return the complete response."""
+        extra = dict(kwargs)
+        reasoning = _pop_reasoning(extra)
         response = await self._client.post(
             self._base_url,
             headers=self._headers(),
             json={
                 "model": model,
                 "messages": [{"role": m.role, "content": m.content} for m in messages],
-                **kwargs,
+                **reasoning,
+                **extra,
             },
         )
         response.raise_for_status()
@@ -53,6 +67,8 @@ class OpenRouterProvider:
 
     async def stream(self, model: str, messages: list[Message], **kwargs: object) -> AsyncIterator[str]:
         """Send messages to the LLM and stream the response token by token."""
+        extra = dict(kwargs)
+        reasoning = _pop_reasoning(extra)
         async with self._client.stream(
             "POST",
             self._base_url,
@@ -61,7 +77,8 @@ class OpenRouterProvider:
                 "model": model,
                 "messages": [{"role": m.role, "content": m.content} for m in messages],
                 "stream": True,
-                **kwargs,
+                **reasoning,
+                **extra,
             },
         ) as response:
             response.raise_for_status()

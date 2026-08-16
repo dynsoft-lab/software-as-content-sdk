@@ -1980,8 +1980,8 @@ function scrollChatToBottom() {
   if (!btn || !dropdown) return;
 
   const RECOMMENDED_ORDER = [
-    'openai/gpt-5.4-mini',
-    'google/gemini-3-flash-preview',
+    'openai/gpt-5.6-luna',
+    'google/gemini-3.7-flash',
     'anthropic/claude-haiku-4.5',
   ];
   const RECOMMENDED_IDS = new Set(RECOMMENDED_ORDER);

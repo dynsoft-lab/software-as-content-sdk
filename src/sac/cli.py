@@ -98,8 +98,8 @@ def _prompt_llm_config() -> dict[str, str]:
     # Model selection
     RECOMMENDED = {
         "anthropic": "anthropic/claude-haiku-4.5",
-        "openai": "openai/gpt-5.4-mini",
-        "google": "google/gemini-3-flash-preview",
+        "openai": "openai/gpt-5.6-luna",
+        "google": "google/gemini-3.7-flash",
     }
 
     if provider_choice == "2":

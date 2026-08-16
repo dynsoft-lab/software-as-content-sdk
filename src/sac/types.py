@@ -128,6 +128,9 @@ class ConversationSettings(BaseModel):
     enable_web_search: bool = True
     intent_rules: str = ""
     growth_rules: str = ""
+    # Reasoning/thinking effort for app generation: "default" leaves it to the
+    # provider, "none" disables thinking, "low"/"medium"/"high" request it.
+    reasoning_effort: str = "default"
 
 
 class ConversationData(BaseModel):

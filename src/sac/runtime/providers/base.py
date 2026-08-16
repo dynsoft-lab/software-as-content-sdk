@@ -12,6 +12,18 @@ from typing import AsyncIterator, Protocol, runtime_checkable
 from sac.types import Message, SearchResult
 
 
+def reasoning_kwargs(effort: str | None) -> dict[str, object]:
+    """Provider kwargs for a reasoning-effort setting.
+
+    Returns {} for "default"/empty so providers that never see the kwarg
+    behave exactly as before; each provider maps "none"/"low"/"medium"/"high"
+    onto its own API shape.
+    """
+    if not effort or effort == "default":
+        return {}
+    return {"reasoning_effort": effort}
+
+
 @runtime_checkable
 class LLMProvider(Protocol):
     """Protocol for LLM providers (OpenRouter, Anthropic, OpenAI, etc.)."""

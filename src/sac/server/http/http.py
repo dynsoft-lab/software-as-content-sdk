@@ -190,6 +190,7 @@ class GenerateRequest(BaseModel):
     web_search: bool = True
     custom_instructions: str = ""
     use_design_system: bool = True
+    reasoning_effort: str = "default"
 
 
 class EvolveRequest(BaseModel):
@@ -205,6 +206,7 @@ class StreamRequest(BaseModel):
     web_search: bool | None = None
     custom_instructions: str | None = None
     use_design_system: bool | None = None
+    reasoning_effort: str | None = None
 
 
 class SendRequest(BaseModel):
@@ -214,6 +216,7 @@ class SendRequest(BaseModel):
     web_search: bool | None = None
     custom_instructions: str | None = None
     use_design_system: bool | None = None
+    reasoning_effort: str | None = None
 
 
 class UpdateConversationRequest(BaseModel):
@@ -342,13 +345,21 @@ def create_app(sac: SaC | None = None) -> FastAPI:
 
     async def _get_or_create_conv(conv_id: str | None, settings: ConversationSettings | None = None, user_id: str = "") -> Any:
         if conv_id and conv_id in _conversations:
-            return _conversations[conv_id]
+            conv = _conversations[conv_id]
+            # Per-request settings win over cached/stored ones — the web
+            # client sends the full current settings on every request, so a
+            # mid-conversation change (e.g. reasoning effort) takes effect.
+            if settings is not None:
+                conv._data.settings = settings
+            return conv
         conv = sac.conversation(id=conv_id, settings=settings)
         if user_id:
             conv._data.user_id = user_id
         # If an existing conv_id was provided, load state from store
         if conv_id:
             await conv._load_from_store()
+            if settings is not None:
+                conv._data.settings = settings
         else:
             # Brand-new conversation: `sac.conversation()` schedules creation
             # as a fire-and-forget task. Explicitly await it here so the conv
@@ -379,6 +390,7 @@ def create_app(sac: SaC | None = None) -> FastAPI:
         settings = ConversationSettings(
             custom_instructions=req.custom_instructions,
             use_design_system=req.use_design_system,
+            reasoning_effort=req.reasoning_effort,
             enable_web_search=req.web_search,
         )
         conv = await _get_or_create_conv(req.conversation_id, settings, user_id=_get_user_id(request))
@@ -412,11 +424,12 @@ def create_app(sac: SaC | None = None) -> FastAPI:
     @app.post("/stream")
     async def stream_generate(req: StreamRequest, request: Request) -> EventSourceResponse:
         settings: ConversationSettings | None = None
-        if req.web_search is not None or req.custom_instructions is not None or req.use_design_system is not None:
+        if req.web_search is not None or req.custom_instructions is not None or req.use_design_system is not None or req.reasoning_effort is not None:
             settings = ConversationSettings(
                 custom_instructions=req.custom_instructions or "",
                 use_design_system=req.use_design_system if req.use_design_system is not None else True,
                 enable_web_search=req.web_search if req.web_search is not None else True,
+                reasoning_effort=req.reasoning_effort or "default",
             )
 
         conv = await _get_or_create_conv(req.conversation_id, settings, user_id=_get_user_id(request))
@@ -444,11 +457,12 @@ def create_app(sac: SaC | None = None) -> FastAPI:
           caller should then use /stream to execute
         """
         settings: ConversationSettings | None = None
-        if req.web_search is not None or req.custom_instructions is not None or req.use_design_system is not None:
+        if req.web_search is not None or req.custom_instructions is not None or req.use_design_system is not None or req.reasoning_effort is not None:
             settings = ConversationSettings(
                 custom_instructions=req.custom_instructions or "",
                 use_design_system=req.use_design_system if req.use_design_system is not None else True,
                 enable_web_search=req.web_search if req.web_search is not None else True,
+                reasoning_effort=req.reasoning_effort or "default",
             )
 
         conv = await _get_or_create_conv(req.conversation_id, settings, user_id=_get_user_id(request))
