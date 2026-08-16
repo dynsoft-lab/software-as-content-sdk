@@ -32,6 +32,7 @@ class CodeProducer(Protocol):
         model: str,
         version: int,
         content: str | None = None,
+        original_intent: str | None = None,
     ) -> App: ...
 
     def stream(
@@ -42,6 +43,7 @@ class CodeProducer(Protocol):
         model: str,
         version: int,
         content: str | None = None,
+        original_intent: str | None = None,
     ) -> AsyncIterator[PipelineEvent]: ...
 
 
@@ -70,6 +72,7 @@ class DefaultCodeProducer:
         model: str,
         version: int,
         content: str | None = None,
+        original_intent: str | None = None,
     ) -> App:
         if prior_app is None:
             return await generate_pipeline(
@@ -83,7 +86,7 @@ class DefaultCodeProducer:
         return await evolve_pipeline(
             new_intent=intent,
             current_code=prior_app.code,
-            original_intent=prior_app.intent,
+            original_intent=original_intent or prior_app.intent,
             model=model,
             llm=self._llm,
             settings=settings,
@@ -100,6 +103,7 @@ class DefaultCodeProducer:
         model: str,
         version: int,
         content: str | None = None,
+        original_intent: str | None = None,
     ) -> AsyncIterator[PipelineEvent]:
         if prior_app is None:
             return stream_generate_pipeline(
@@ -116,7 +120,7 @@ class DefaultCodeProducer:
             return stream_evolve_pipeline(
                 new_intent=intent,
                 current_code=prior_app.code,
-                original_intent=prior_app.intent,
+                original_intent=original_intent or prior_app.intent,
                 model=model,
                 llm=self._llm,
                 settings=settings,
@@ -127,7 +131,7 @@ class DefaultCodeProducer:
         return stream_evolve_pipeline_diff(
             new_intent=intent,
             current_code=prior_app.code,
-            original_intent=prior_app.intent,
+            original_intent=original_intent or prior_app.intent,
             model=model,
             llm=self._llm,
             settings=settings,

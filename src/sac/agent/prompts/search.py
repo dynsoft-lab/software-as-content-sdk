@@ -44,6 +44,8 @@ RULES:
 3. IMPORTANT: Include the current year ({date['year']}) in queries when searching for recent/current information
 4. Consider what data the UI would display and search for that specific information
 5. Output ONLY valid JSON, no explanations
+6. NO-SEARCH CASES: If the request needs NO real-world data — pure UI/layout/style changes ("make it darker", "rearrange the tabs", "bigger font"), edits that reuse data already in the app, or bug fixes — output {{"queries": []}} so no search runs.
+7. CONTEXT DISAMBIGUATION: When a CONVERSATION CONTEXT is provided, the NEW REQUEST is a follow-up within that context — resolve ambiguous or elliptical requests against it (e.g. in a Norway trip conversation, "stay in CBD" means the city centre of the Norwegian destination, NOT Melbourne/Sydney CBD). Include the disambiguating place/subject from the context in your queries. Only ignore the context when the new request explicitly introduces a different topic.
 
 OUTPUT FORMAT:
 {{

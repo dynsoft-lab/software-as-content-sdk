@@ -123,6 +123,21 @@ class Conversation:
     def version(self) -> int:
         return len(self._apps)
 
+    def _intent_context(self) -> str | None:
+        """Conversation-level intent for the evolve prompt's "Original Intent".
+
+        Passing only the prior app's intent makes memory one-step deep — after
+        a few evolves the original topic is gone. Anchor on the FIRST intent
+        and append the recent request chain instead.
+        """
+        if not self._apps:
+            return None
+        first = self._apps[0].intent
+        chain = [a.intent for a in self._apps[1:] if a.intent]
+        if chain:
+            return f"{first} (subsequent requests: {' -> '.join(chain[-3:])})"
+        return first
+
     # ─── Core: pure render entry ────────────────────────────────────
 
     async def ingest(
@@ -146,6 +161,7 @@ class Conversation:
             model=model or self.model,
             version=self.version + 1,
             content=content,
+            original_intent=self._intent_context(),
         )
         self._apps.append(app)
         return app
@@ -166,6 +182,7 @@ class Conversation:
             model=model or self.model,
             version=self.version + 1,
             content=content,
+            original_intent=self._intent_context(),
         )
         async for event in gen:
             if isinstance(event, PipelineCompleteEvent):

@@ -71,6 +71,7 @@ Decide how to integrate the new content:
 ```
 
 IMPORTANT:
+- CONTEXT GUARD: The New Intent is a follow-up within the existing app's context (see Original Intent). If the New Data's subject conflicts with the app's topic (e.g. data about a different city, product, or domain), assume it came from an ambiguous search: keep the app's topic authoritative, reinterpret the New Intent within it, and use only the parts of the data that fit. Do NOT pivot the app to the data's topic unless the New Intent itself explicitly asks for the new topic.
 - Keep ALL existing functionality intact
 - Maintain consistent styling
 - Output BOTH the JSON decision AND the complete code
@@ -146,6 +147,7 @@ Rules for search/replace blocks:
 - You may output multiple blocks — they are applied sequentially to the code
 - For insertions: include the lines just before the insertion point in SEARCH, then include those same lines plus the new lines in REPLACE
 - For deletions: put the lines to delete in SEARCH and leave REPLACE empty
+- CONTEXT GUARD: The New Intent is a follow-up within the existing app's context (see Original Intent). If the New Data's subject conflicts with the app's topic (e.g. data about a different city, product, or domain), assume it came from an ambiguous search: keep the app's topic authoritative, reinterpret the New Intent within it, and use only the parts of the data that fit. Do NOT pivot the app to the data's topic unless the New Intent itself explicitly asks for the new topic.
 - Keep ALL existing functionality intact
 - Maintain consistent styling
 - DATA RENDERING — CRITICAL: When "New Data" is provided above, you MUST render its actual content visually in the UI. Define the data as a JS array/object and map over it to display real values. NEVER just change a button label or add a stub — the user expects to SEE the data on screen. If the data is long, use tabs, accordion, or scrollable sections — but always render it inline in the page, NOT in modals or overlays.

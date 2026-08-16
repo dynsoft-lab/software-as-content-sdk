@@ -84,7 +84,7 @@ class StandaloneAgent:
 
         if enable_search:
             try:
-                search_queries = await _extract_search_queries(intent, model, self._llm)
+                search_queries = await _extract_search_queries(intent, model, self._llm, _conversation_context(conv))
                 if search_queries:
                     qs = [q.query for q in search_queries]
                     search_results = await self._search.search(qs)  # type: ignore[union-attr]
@@ -148,9 +148,10 @@ class StandaloneAgent:
         search_results: list[SearchResult] = []
         composed_content: str | None = None
 
-        if self._search is not None:
+        web_search_opt = opts.get("web_search", conv.settings.enable_web_search)
+        if self._search is not None and bool(web_search_opt):
             try:
-                search_queries = await _extract_search_queries(intent, model, self._llm)
+                search_queries = await _extract_search_queries(intent, model, self._llm, _conversation_context(conv))
                 if search_queries:
                     qs = [q.query for q in search_queries]
                     search_results = await self._search.search(qs)
@@ -214,17 +215,17 @@ class StandaloneAgent:
         search_queries: list[SearchQuery] = []
         search_results: list[SearchResult] = []
         composed_content: str | None = None
-        run_search = (
-            self._search is not None
-            and (is_evolve or bool(web_search_opt))
-        )
+        # Evolve respects the web_search setting too; the query-extraction
+        # prompt may also return zero queries for requests that need no
+        # external data (pure UI tweaks), which skips the search entirely.
+        run_search = self._search is not None and bool(web_search_opt)
 
         if run_search:
             if not is_evolve:
                 agent_emitter.start("analyze")
                 yield PipelineStageEvent(name="analyze", status=StageStatus.RUNNING)
                 try:
-                    search_queries = await _extract_search_queries(intent, model, self._llm)
+                    search_queries = await _extract_search_queries(intent, model, self._llm, _conversation_context(conv))
                     agent_emitter.complete("analyze")
                     yield PipelineStageEvent(name="analyze", status=StageStatus.COMPLETED)
                 except Exception as exc:
@@ -237,7 +238,7 @@ class StandaloneAgent:
                 agent_emitter.start("search")
                 yield PipelineStageEvent(name="search", status=StageStatus.RUNNING)
                 try:
-                    search_queries = await _extract_search_queries(intent, model, self._llm)
+                    search_queries = await _extract_search_queries(intent, model, self._llm, _conversation_context(conv))
                 except Exception:
                     pass
 
@@ -332,16 +333,38 @@ class StandaloneAgent:
 # ─── Module-level helpers (no class state needed) ──────────────────
 
 
+def _conversation_context(conv: "Conversation") -> str | None:
+    """Compact conversation context for disambiguating follow-up intents.
+
+    Follow-ups are often elliptical ("I need to stay in CBD", "cheaper
+    options") — interpreted standalone they get globally re-resolved by
+    search. Title (first intent) + recent intents anchor them to the
+    conversation's actual topic.
+    """
+    parts: list[str] = []
+    if conv.title:
+        parts.append(f"Conversation topic: {conv.title}")
+    intents = [a.intent for a in conv.history if a.intent]
+    if intents:
+        parts.append("Previous requests: " + " -> ".join(intents[-3:]))
+    return "\n".join(parts) or None
+
+
 async def _extract_search_queries(
-    intent: str, model: str, llm: LLMProvider
+    intent: str, model: str, llm: LLMProvider, context: str | None = None
 ) -> list[SearchQuery]:
     """Extract search queries from user intent via LLM."""
     search_prompt = get_search_query_extraction_prompt()
+    user_content = (
+        f"CONVERSATION CONTEXT:\n{context}\n\nNEW REQUEST: {intent}"
+        if context
+        else intent
+    )
     response = await llm.complete(
         model,
         [
             Message(role="system", content=search_prompt),
-            Message(role="user", content=intent),
+            Message(role="user", content=user_content),
         ],
     )
     try:
