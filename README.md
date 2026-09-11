@@ -158,10 +158,3 @@ For local dev: `pip install -e .`
 
 [Apache-2.0](./LICENSE) · © 2026 Mulong Xie / Dynsoft Lab
 
----
-
-<div align="center">
-
-Built by [Dynsoft Lab](https://sac.dynsoft.ai). Questions: [mulong@mulongxie.me](mailto:mulong@mulongxie.me)
-
-</div>
