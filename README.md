@@ -154,17 +154,6 @@ Issues and PRs welcome. Highest-leverage contributions right now:
 
 For local dev: `pip install -e .`
 
-## Citation
-
-```bibtex
-@article{xie2026sac,
-  title  = {Software as Content: Dynamic Applications as the Human-Agent Interaction Layer},
-  author = {Xie, Mulong},
-  year   = {2026},
-  url    = {https://arxiv.org/abs/2603.21334}
-}
-```
-
 ## License
 
 [Apache-2.0](./LICENSE) · © 2026 Mulong Xie / Dynsoft Lab
