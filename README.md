@@ -156,5 +156,5 @@ For local dev: `pip install -e .`
 
 ## License
 
-[Apache-2.0](./LICENSE) · © 2026 Mulong Xie / Dynsoft Lab
+[Apache-2.0](./LICENSE) 
 
