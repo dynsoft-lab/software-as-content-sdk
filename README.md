@@ -9,8 +9,6 @@
 [![Python](https://img.shields.io/pypi/pyversions/sac-sdk.svg)](https://pypi.org/project/sac-sdk/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
 
-[Home Page](https://sac.dynsoft.ai) · [Full Paper](https://arxiv.org/abs/2603.21334)
-
 </div>
 
 ---
